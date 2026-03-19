@@ -1,11 +1,139 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import '../styles/global.css';
+import { getCollection } from 'astro:content';
+import { generateOgImage } from '@/lib/generateOgImage';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const posts = (await getCollection('blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 ---
 
-<Layout>
-	<Welcome />
-</Layout>
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Astro Cloudinary OG Demo</title>
+  </head>
+  <body class='min-h-screen bg-background text-foreground'>
+    <main class='mx-auto max-w-6xl px-6 py-16'>
+      <section class='mx-auto mb-14 max-w-3xl text-center'>
+        <p class='mb-4 text-sm font-medium text-muted-foreground'>
+          Astro x Cloudinary
+        </p>
+
+        <h1 class='mb-4 text-5xl font-bold tracking-tight md:text-6xl'>
+          Dynamic Open Graph Images Demo
+        </h1>
+
+        <p class='mx-auto max-w-2xl text-lg text-muted-foreground'>
+          Astro content powers dynamic social preview images with one reusable
+          Cloudinary template.
+        </p>
+      </section>
+
+      <section class='mx-auto max-w-6xl'>
+        <div class='mb-8'>
+          <p class='text-sm font-medium text-muted-foreground'>Demo Posts</p>
+          <h2 class='text-3xl font-bold tracking-tight'>
+            Generated OG Previews
+          </h2>
+          <p class='mt-2 text-muted-foreground'>
+            Each card below uses post data to build a Cloudinary image URL.
+          </p>
+        </div>
+
+        <div class='grid gap-8'>
+          {
+            posts.map((post) => {
+              const ogImage = generateOgImage({
+                title: post.data.title,
+                description: post.data.description,
+              });
+
+              const postUrl = `http://localhost:4321/posts/${post.id}/`;
+
+              return (
+                <article class='overflow-hidden rounded-[28px] border border-border/60 bg-card shadow-[0_10px_40px_rgba(15,23,42,0.06)]'>
+                  <img
+                    src={ogImage}
+                    alt={`Open Graph preview for ${post.data.title}`}
+                    class='aspect-1200/630 w-full object-cover bg-muted'
+                    loading='lazy'
+                  />
+
+                  <div class='space-y-4 p-8'>
+                    <p class='text-sm text-muted-foreground'>
+                      {post.data.pubDate.toDateString()}
+                      {post.data.readTime && ` • ${post.data.readTime}`}
+                    </p>
+
+                    <h3 class='text-2xl font-semibold tracking-tight'>
+                      {post.data.title}
+                    </h3>
+
+                    <p class='text-muted-foreground'>{post.data.description}</p>
+
+                    <div class='flex flex-wrap gap-2'>
+                      {post.data.tags.map((tag) => (
+                        <span class='rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground'>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div class='flex flex-wrap gap-3 pt-2'>
+                      <a
+                        href={ogImage}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        class='inline-flex items-center rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90'
+                      >
+                        Open OG image
+                      </a>
+
+                      <a
+                        href={`/posts/${post.id}/`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        class='inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted'
+                      >
+                        Open post page
+                      </a>
+
+                      <a
+                        href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.data.title)}&url=${encodeURIComponent(postUrl)}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        class='inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted'
+                      >
+                        Share to X
+                      </a>
+
+                      <a
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        class='inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted'
+                      >
+                        Share to Facebook
+                      </a>
+
+                      <a
+                        href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        class='inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted'
+                      >
+                        Share to LinkedIn
+                      </a>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          }
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

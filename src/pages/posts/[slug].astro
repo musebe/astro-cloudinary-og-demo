@@ -1,0 +1,96 @@
+---
+import '../../styles/global.css';
+import { getCollection, render } from 'astro:content';
+import { generateOgImage } from '@/lib/generateOgImage';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+
+const ogImage = generateOgImage({
+  title: post.data.title,
+  description: post.data.description,
+});
+
+const pageUrl = `http://localhost:4321/posts/${post.id}/`;
+---
+
+<html lang='en'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>{post.data.title}</title>
+    <meta name='description' content={post.data.description} />
+
+    <meta property='og:title' content={post.data.title} />
+    <meta property='og:description' content={post.data.description} />
+    <meta property='og:type' content='article' />
+    <meta property='og:url' content={pageUrl} />
+    <meta property='og:image' content={ogImage} />
+
+    <meta name='twitter:card' content='summary_large_image' />
+    <meta name='twitter:title' content={post.data.title} />
+    <meta name='twitter:description' content={post.data.description} />
+    <meta name='twitter:image' content={ogImage} />
+  </head>
+
+  <body class='min-h-screen bg-background text-foreground'>
+    <main class='mx-auto max-w-4xl px-6 py-16'>
+      <a
+        href='/'
+        class='mb-8 inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition hover:bg-muted'
+      >
+        Back home
+      </a>
+
+      <article class='space-y-8'>
+        <header class='space-y-4'>
+          <p class='text-sm text-muted-foreground'>
+            {post.data.pubDate.toDateString()}
+            {post.data.readTime && ` • ${post.data.readTime}`}
+          </p>
+
+          <h1 class='text-4xl font-bold tracking-tight md:text-5xl'>
+            {post.data.title}
+          </h1>
+
+          <p class='max-w-2xl text-lg text-muted-foreground'>
+            {post.data.description}
+          </p>
+
+          <div class='flex flex-wrap gap-2'>
+            {
+              post.data.tags.map((tag) => (
+                <span class='rounded-full border px-3 py-1 text-xs font-medium text-muted-foreground'>
+                  {tag}
+                </span>
+              ))
+            }
+          </div>
+        </header>
+
+        <div
+          class='overflow-hidden rounded-[28px] border border-border/60 bg-card shadow-[0_10px_40px_rgba(15,23,42,0.06)]'
+        >
+          <img
+            src={ogImage}
+            alt={`Open Graph preview for ${post.data.title}`}
+            class='aspect-1200/630 w-full object-cover bg-muted'
+          />
+        </div>
+
+        <div class='prose prose-slate max-w-none'>
+          <Content />
+        </div>
+      </article>
+    </main>
+  </body>
+</html>
